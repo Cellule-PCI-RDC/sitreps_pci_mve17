@@ -1,0 +1,27 @@
+name: Synchronisation Kobo
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cryptography
+      - run: python sync_kobo.py
+        env:
+          KOBO_SERVER: ${{ vars.KOBO_SERVER }}
+          KOBO_UID: ${{ vars.KOBO_UID }}
+          KOBO_TOKEN: ${{ secrets.KOBO_TOKEN }}
+          ACCESS_CODE: ${{ secrets.ACCESS_CODE }}
+      - run: |
+          git config user.name "sync-bot"
+          git config user.email "sync-bot@users.noreply.github.com"
+          git add summary.json data.enc.json
+          git diff --cached --quiet || (git commit -m "Synchronisation Kobo" && git push)
