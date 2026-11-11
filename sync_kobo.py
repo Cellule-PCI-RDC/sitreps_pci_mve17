@@ -18,10 +18,11 @@ def summarize(rows):
     for r in rows:
         r = {k.split("/")[-1]: v for k, v in r.items()}
         prov, z, d = slug(r.get("province", "")), str(r.get("zone_sante", "")), str(r.get("date_rapport", ""))[:10]
-        if not (prov and z and re.match(r"\d{4}-\d{2}-\d{2}", d)): continue
-        zs = slug(z)
-        if zs.startswith(prov + "_"): zs = zs[len(prov) + 1:]
-        p.setdefault(prov, {}).setdefault(d, set()).add(zs)
+        if not (prov and z.strip() and re.match(r"\d{4}-\d{2}-\d{2}", d)): continue
+        for tok in z.split():  # zone_sante peut contenir plusieurs zones (select_multiple)
+            zs = slug(tok)
+            if zs.startswith(prov + "_"): zs = zs[len(prov) + 1:]
+            p.setdefault(prov, {}).setdefault(d, set()).add(zs)
     return {"upd": datetime.datetime.utcnow().isoformat(timespec="seconds"),
             "p": {k: {d: sorted(v) for d, v in o.items()} for k, o in p.items()}}
 
