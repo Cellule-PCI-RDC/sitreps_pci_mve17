@@ -63,12 +63,19 @@ def build_ess(recs):
         out.setdefault(p, []).append([[d, s] for d, s in v])
     return out
 
+def getv(row, name):
+    """Valeur d'un champ, même s'il est rangé dans un groupe (clé « groupe/champ »)."""
+    if name in row: return row[name]
+    for kk, x in row.items():
+        if kk.split("/")[-1] == name: return x
+    return ""
+
 def ess_records(asset, rows):
     survey = asset["content"]["survey"]
     choices = {}
     for c in asset["content"].get("choices", []):
-        for lb in _labels(c.get("label"))[:1]:
-            choices[(c.get("list_name"), c.get("name"))] = lb
+        lb = _labels(c.get("label"))
+        if lb: choices[(c.get("list_name"), c.get("name"))] = lb[0]
     want = {k: slug(v) for k, v in ESS_FIELDS.items()}
     item = {}
     for q in survey:
@@ -77,29 +84,29 @@ def ess_records(asset, rows):
                 if slug(lb) == w and k not in item: item[k] = q
     missing = [ESS_FIELDS[k] for k in want if k not in item and k != "autre"]
     if missing: raise RuntimeError("Champs introuvables dans la base ESS : " + ", ".join(missing))
-    def val(row, k):
+    print("Champs ESS reconnus :", {k: q["name"] for k, q in item.items()})
+    def raw(row, k):
         q = item.get(k)
         if not q: return ""
-        v = None
         for key in (q.get("$xpath"), q["name"]):
-            if key and key in row: v = row[key]; break
-        if v is None:
-            v = next((x for kk, x in row.items() if kk.split("/")[-1] == q["name"]), "")
-        v = str(v or "").strip()
-        t = str(q.get("type", "")).split()
-        if t and t[0] == "select_one" and len(t) > 1: v = choices.get((t[1], v), v)
-        return v
-    recs = []
+            if key and key in row: return str(row[key] or "").strip()
+        return str(getv(row, q["name"]) or "").strip()
+    def label(row, k):
+        v = raw(row, k); t = str(item.get(k, {}).get("type", "")).split()
+        return choices.get((t[1], v), v) if t and t[0] == "select_one" and len(t) > 1 else v
+    recs, no_score = [], 0
     for row in rows:
-        try: s = float(str(row.get(ESS_SCORE, "")).replace(",", "."))
-        except ValueError: continue
-        d = str(val(row, "date"))[:10]; sub = str(row.get("_submission_time", ""))[:10]
+        try: s = float(str(getv(row, ESS_SCORE)).replace(",", "."))
+        except ValueError: no_score += 1; continue
+        d = raw(row, "date")[:10]; sub = str(row.get("_submission_time", ""))[:10]
         if not re.match(r"\d{4}-\d{2}-\d{2}", d): d = sub
         if re.match(r"\d{4}-\d{2}-\d{2}", sub) and sub < d: d = sub   # une évaluation ne peut pas être postérieure à sa saisie
-        nom = val(row, "nom")
-        if slug(nom) == "autre" and val(row, "autre"): nom = val(row, "autre")
-        p = slug(val(row, "province"))
-        if p and nom and d: recs.append({"p": p, "z": val(row, "zs"), "a": val(row, "aire"), "n": nom, "d": d, "s": s})
+        nom = raw(row, "nom")
+        if slug(label(row, "nom")) == "autre" and raw(row, "autre"): nom = raw(row, "autre")
+        p = slug(label(row, "province"))
+        if p and nom and d: recs.append({"p": p, "z": raw(row, "zs"), "a": raw(row, "aire"), "n": nom, "d": d, "s": s})
+    print(f"Base ESS : {len(rows)} lignes, {len(recs)} évaluations exploitables, {no_score} sans score")
+    if rows and not recs: raise RuntimeError("aucune évaluation exploitable (champ score_pct introuvable ?)")
     return recs
 
 def fetch_json(url):
