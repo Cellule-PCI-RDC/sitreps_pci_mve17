@@ -1,7 +1,7 @@
 name: Synchronisation Kobo
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 permissions:
   contents: write
@@ -18,6 +18,7 @@ jobs:
         env:
           KOBO_SERVER: ${{ vars.KOBO_SERVER }}
           KOBO_UID: ${{ vars.KOBO_UID }}
+          KOBO_UID_ESS: ${{ vars.KOBO_UID_ESS }}
           KOBO_TOKEN: ${{ secrets.KOBO_TOKEN }}
           ACCESS_CODE: ${{ secrets.ACCESS_CODE }}
       - run: |
