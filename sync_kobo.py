@@ -53,15 +53,19 @@ def _labels(x):
     return []
 
 def build_ess(recs):
-    """recs: dicts {p,z,a,n,d,s}. Retourne {province: [ [ [date, score], ... ] par établissement ]}."""
-    ev = {}
+    """recs: dicts {p,z,a,n,d,s,zl}. Retourne ({province: [ [ [date, score], ... ] par établissement ]},
+    {province: {zone_de_santé: date de la 1re évaluation}})."""
+    ev, esz = {}, {}
     for r in recs:
         ev.setdefault((r["p"], slug(r["z"]), slug(r["a"]), slug(r["n"])), []).append((r["d"], r["s"]))
+        z = esz.setdefault(r["p"], {})
+        zl = r.get("zl") or slug(r["z"])
+        if zl and (zl not in z or r["d"] < z[zl]): z[zl] = r["d"]
     out = {}
     for (p, *_), v in ev.items():
         v.sort()
         out.setdefault(p, []).append([[d, s] for d, s in v])
-    return out
+    return out, esz
 
 def getv(row, name):
     """Valeur d'un champ, même s'il est rangé dans un groupe (clé « groupe/champ »)."""
@@ -104,7 +108,7 @@ def ess_records(asset, rows):
         nom = raw(row, "nom")
         if slug(label(row, "nom")) == "autre" and raw(row, "autre"): nom = raw(row, "autre")
         p = slug(label(row, "province"))
-        if p and nom and d: recs.append({"p": p, "z": raw(row, "zs"), "a": raw(row, "aire"), "n": nom, "d": d, "s": s})
+        if p and nom and d: recs.append({"p": p, "z": raw(row, "zs"), "zl": slug(label(row, "zs")), "a": raw(row, "aire"), "n": nom, "d": d, "s": s})
     print(f"Base ESS : {len(rows)} lignes, {len(recs)} évaluations exploitables, {no_score} sans score")
     if rows and not recs: raise RuntimeError("aucune évaluation exploitable (champ score_pct introuvable ?)")
     return recs
@@ -123,13 +127,13 @@ def fetch_ess():
 
 if __name__ == "__main__":
     rows = fetch_all()
-    ess = None
+    ess = esz = None
     if os.environ.get("KOBO_UID_ESS"):
         try:
-            ess = fetch_ess()
+            ess, esz = fetch_ess()
         except Exception as e:  # la base ESS ne doit pas bloquer la synchronisation principale
             print("ATTENTION base ESS non synchronisée :", e)
-    dh = hashlib.sha256((json.dumps(rows, sort_keys=True, ensure_ascii=False) + json.dumps(ess, sort_keys=True)).encode()).hexdigest()
+    dh = hashlib.sha256((json.dumps(rows, sort_keys=True, ensure_ascii=False) + json.dumps([ess, esz], sort_keys=True)).encode()).hexdigest()
     try:
         old = json.load(open("summary.json", encoding="utf8")).get("dh")
     except Exception:
@@ -138,7 +142,7 @@ if __name__ == "__main__":
         print("Aucun changement : rien à publier")
         raise SystemExit
     summ = summarize(rows); summ["dh"] = dh
-    if ess is not None: summ["ess"] = ess
+    if ess is not None: summ["ess"] = ess; summ["esz"] = esz
     json.dump(summ, open("summary.json", "w", encoding="utf8"), ensure_ascii=False, separators=(",", ":"))
     json.dump(encrypt(json.dumps(rows, ensure_ascii=False).encode(), os.environ["ACCESS_CODE"]), open("data.enc.json", "w"))
     print(len(rows), "rapports synchronisés" + (f", {sum(len(v) for v in ess.values())} ESS évalués" if ess else ""))
