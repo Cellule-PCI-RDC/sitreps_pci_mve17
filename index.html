@@ -23,7 +23,10 @@ button{background:var(--pri);color:var(--bg);border-color:var(--pri);cursor:poin
 .p{border:1px solid var(--bd);border-radius:8px;padding:10px;margin:10px 0}.hide{display:none}
 li{margin:3px 0}.chip{padding:3px 9px;font-size:13px}#msg{margin:8px 0;font-size:14px;color:var(--acc)}
 .pv{fill:var(--off);stroke:var(--bd);stroke-width:1.2;vector-effect:non-scaling-stroke}.pv.on{fill:var(--tint);stroke:var(--acc);cursor:pointer}
-.zn{fill:none;stroke:var(--bd);stroke-width:.4;vector-effect:non-scaling-stroke;pointer-events:none}.zn.rep{fill:var(--acc);fill-opacity:.6}.zn.cov{fill:var(--pri);fill-opacity:.3}.pv.cc{fill:var(--tint)}.po{fill:none;stroke:var(--pri);stroke-width:2.2;vector-effect:non-scaling-stroke;pointer-events:none}
+.zn{fill:none;stroke:var(--bd);stroke-width:.4;vector-effect:non-scaling-stroke;pointer-events:none}.zn.rep{fill:var(--acc);fill-opacity:.6}.zn.cov{fill:var(--pri);fill-opacity:.3}.pv.cc{fill:var(--tint)}.po{fill:none;stroke:var(--pri);stroke-width:1.1;vector-effect:non-scaling-stroke;pointer-events:none}.po.rd{stroke:var(--acc);stroke-width:1.5}
+.pg{transform-box:fill-box;transform-origin:center;transition:transform .15s,filter .15s}.pg.hv{transform:scale(1.04);filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}.pg.hv .po{stroke-width:2.2}.pg.hv .pv.on{fill:var(--tint)}
+#tip{position:absolute;z-index:5;pointer-events:none;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:6px 9px;font-size:12px;line-height:1.5;box-shadow:0 3px 10px rgba(0,0,0,.3);max-width:230px}#tip small{color:var(--mut)}
+.dt{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}.dt.r{background:var(--acc)}.dt.c{background:var(--pri);opacity:.5}.dt.ro{background:none;border:2px solid var(--acc);width:11px;height:11px;border-radius:2px;box-sizing:border-box}.lg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mut);margin:8px 0}
 #mw{position:relative;max-width:760px;margin:auto}#mw svg{width:100%;touch-action:none;background:var(--bg);border:1px solid var(--bd);border-radius:8px}
 .lb{pointer-events:none;text-anchor:middle;fill:var(--pri);font-weight:700;paint-order:stroke;stroke:var(--bg);stroke-width:3px}
 .bd{fill:var(--acc);fill-opacity:.85;stroke:var(--bg);stroke-width:2;vector-effect:non-scaling-stroke;cursor:pointer}svg,svg text{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -224,13 +227,14 @@ function cnt(k,d){if(live())return counts(k,d);const o=(S.sum&&S.sum.p[k])||{};r
 function repZ(k,d){if(live())return new Set(S.rows.filter(r=>r.p===k&&r.d===d).flatMap(r=>Z(r).map(sl)));return new Set(((S.sum&&S.sum.p[k])||{})[d]||[])}
 let V=null;
 function home(){if(typeof GEO==='undefined'){const b=P.map(p=>{const[t,c]=S.date?cnt(p.k,S.date):[0,0];return c?`<button class="on" data-k="${p.k}">${esc(p.n)} ${t}/${c}</button>`:''}).join(' ');$('#main').innerHTML='<p class="mut">Fichier de carte introuvable. Liste des provinces :</p><div class="row">'+(b||'<span class="mut">aucune donnée</span>')+'</div>';document.querySelectorAll('#main button').forEach(x=>x.onclick=()=>pick(x.dataset.k));return}
-const d=S.date,vb=GEO.vb,eS=S.essLoc||S.ess||{};let sv='',tx='',po='';const R={},C={};
-for(const k in GEO.prov){const[t,c]=d?cnt(k,d):[0,0],cn=c>0||(eS[k]||[]).length>0;R[k]=d?dayZ(k,d):new Set();C[k]=d?cumZ(k,d):new Set();sv+=`<path class="pv ${c?'on':cn?'cc':''}" data-k="${k}" d="${GEO.prov[k]}" fill-rule="evenodd"/>`;
-if(cn){po+=`<path class="po" d="${GEO.prov[k]}" fill-rule="evenodd"/>`;const n=GEO.prov[k].match(/-?\d+\.?\d*/g).map(Number);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(let i=0;i<n.length;i+=2){x0=Math.min(x0,n[i]);x1=Math.max(x1,n[i]);y0=Math.min(y0,n[i+1]);y1=Math.max(y1,n[i+1])}
-const x=(x0+x1)/2,y=(y0+y1)/2;if(c&&x1-x0<150)sv+=`<circle class="bd on" data-k="${k}" cx="${x}" cy="${y}" r="14"/>`;tx+=`<text class="lb" data-s="10" x="${x}" y="${y}">${esc(GEO.names[k])}</text>${t?`<text class="lb" data-s="18" x="${x}" y="${y+19}" style="fill:var(--acc)">+</text>`:''}`}}
-for(const z in GEO.zs){const[k,q]=z.split('|');sv+=`<path class="zn ${R[k]&&R[k].has(q)?'rep':C[k]&&C[k].has(q)?'cov':''}" d="${GEO.zs[z]}"/>`}
-sv+=po;
-$('#main').innerHTML=`<p class="mut">${d?`Situation au ${fd(d)} : un « + » rouge signale de nouveaux rapports à cette date. Touchez une province en rouge${live()?'':' (code d’accès requis)'}.`:'Aucune donnée de synchronisation disponible pour le moment.'}</p><div id="mw"><svg id="sv" viewBox="${vb.join(' ')}">${sv}${tx}</svg><div class="zb"><button class="s" id="zi">+</button><button class="s" id="zo">−</button><button class="s" id="zr">⟲</button></div></div>`;
+const d=S.date,vb=GEO.vb,eS=S.essLoc||S.ess||{};let sv='',tx='';const zk={};
+for(const z in GEO.zs){const[k,q]=z.split('|');(zk[k]=zk[k]||[]).push([q,GEO.zs[z]])}
+for(const k in GEO.prov){const[t,c]=d?cnt(k,d):[0,0],cn=c>0||(eS[k]||[]).length>0,R=cn&&d?dayZ(k,d):new Set(),C=cn&&d?cumZ(k,d):new Set();
+let g=`<path class="pv ${c?'on':cn?'cc':''}" data-k="${k}" d="${GEO.prov[k]}" fill-rule="evenodd"/>`;(zk[k]||[]).forEach(([q,p])=>{g+=`<path class="zn ${R.has(q)?'rep':C.has(q)?'cov':''}" d="${p}"/>`});
+if(cn){g+=`<path class="po ${c?'rd':''}" d="${GEO.prov[k]}" fill-rule="evenodd"/>`;const n=GEO.prov[k].match(/-?\d+\.?\d*/g).map(Number);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(let i=0;i<n.length;i+=2){x0=Math.min(x0,n[i]);x1=Math.max(x1,n[i]);y0=Math.min(y0,n[i+1]);y1=Math.max(y1,n[i+1])}
+const x=(x0+x1)/2,y=(y0+y1)/2;if(c&&x1-x0<150)g+=`<circle class="bd on" data-k="${k}" cx="${x}" cy="${y}" r="14"/>`;tx+=`<text class="lb" data-s="10" x="${x}" y="${y}">${esc(GEO.names[k])}</text>${t?`<text class="lb" data-s="18" x="${x}" y="${y+19}" style="fill:var(--acc)">+</text>`:''}`}
+sv+=`<g class="pg ${c?'on':''}" data-k="${k}">${g}</g>`}
+$('#main').innerHTML=`<p class="mut">${d?`Situation au ${fd(d)} : un « + » rouge signale de nouveaux rapports à cette date. Touchez une province en rouge${live()?'':' (code d’accès requis)'}.`:'Aucune donnée de synchronisation disponible pour le moment.'}</p><div id="mw"><svg id="sv" viewBox="${vb.join(' ')}">${sv}${tx}</svg><div id="tip" class="hide"></div><div class="zb"><button class="s" id="zi">+</button><button class="s" id="zo">−</button><button class="s" id="zr">⟲</button></div></div><div class="lg"><span><i class="dt ro"></i>Contour rouge : province avec rapports</span><span><i class="dt r"></i>Zone rapportée ce jour</span><span><i class="dt c"></i>Zone couverte (rapports ou évaluations ESS)</span></div>`;
 V=vb.slice();const svg=$('#sv');
 const ap=()=>{svg.setAttribute('viewBox',V.map(v=>v.toFixed(1)).join(' '));const u=V[2]/svg.clientWidth;svg.querySelectorAll('.bd').forEach(c=>c.setAttribute('r',12*u));svg.querySelectorAll('text').forEach(t=>t.style.fontSize=(t.dataset.s*u*1.15)+'px')};
 const zm=(f,cx,cy)=>{const w=Math.min(vb[2],Math.max(vb[2]/12,V[2]*f)),h=w*vb[3]/vb[2];V=[cx-(cx-V[0])*w/V[2],cy-(cy-V[1])*h/V[3],w,h];ap()};
@@ -242,6 +246,12 @@ svg.onpointerdown=e=>{tg=e.target;svg.setPointerCapture(e.pointerId);ps.set(e.po
 svg.onpointermove=e=>{if(!ps.has(e.pointerId))return;const o=ps.get(e.pointerId);if(ps.size===2){const q=[...ps.values()],a=Math.hypot(q[0][0]-q[1][0],q[0][1]-q[1][1]);ps.set(e.pointerId,[e.clientX,e.clientY]);const q2=[...ps.values()],b=Math.hypot(q2[0][0]-q2[1][0],q2[0][1]-q2[1][1]);if(a&&b){const[x,y]=pt({clientX:(q2[0][0]+q2[1][0])/2,clientY:(q2[0][1]+q2[1][1])/2});zm(a/b,x,y)}mv=9;return}
 const r=svg.getBoundingClientRect(),dx=(e.clientX-o[0])/r.width*V[2],dy=(e.clientY-o[1])/r.height*V[3];mv+=Math.abs(e.clientX-o[0])+Math.abs(e.clientY-o[1]);ps.set(e.pointerId,[e.clientX,e.clientY]);if(mv>6){V[0]-=dx;V[1]-=dy;ap()}};
 svg.onpointerup=e=>{ps.delete(e.pointerId);if(mv<7&&ps.size===0&&tg&&tg.classList&&tg.classList.contains('on'))pick(tg.dataset.k)};
+const tip=$('#tip');let hv=null;
+const setHv=g=>{if(hv===g)return;if(hv)hv.classList.remove('hv');hv=g;if(g){g.classList.add('hv');svg.insertBefore(g,svg.querySelector('text'))}else tip.classList.add('hide')};
+const tipHtml=k=>{const[t,c]=d?cnt(k,d):[0,0],cz=d?cumZ(k,d).size:0,tot=Object.keys(ZN[k]||{}).length;return`<b>${esc(GEO.names[k])}</b><br><i class="dt r"></i>${t} zone${t>1?'s':''} de santé ${t>1?'ont':'a'} rapporté le ${fd(d)}<br><i class="dt c"></i>${cz}/${tot} zones couvertes (cumul)<br><small>Touchez ou cliquez pour ouvrir</small>`};
+const place=e=>{const r=$('#mw').getBoundingClientRect();tip.style.left=Math.max(4,Math.min(e.clientX-r.left+14,r.width-tip.offsetWidth-6))+'px';tip.style.top=Math.max(4,Math.min(e.clientY-r.top+14,r.height-tip.offsetHeight-6))+'px'};
+const aim=e=>{const g=e.target.closest&&e.target.closest('.pg.on');if(g&&d&&mv<=6){setHv(g);tip.innerHTML=tipHtml(g.dataset.k);tip.classList.remove('hide');place(e)}else setHv(null)};
+svg.addEventListener('pointermove',aim);svg.addEventListener('pointerdown',aim);svg.addEventListener('pointerleave',()=>setHv(null));svg.addEventListener('pointerup',()=>setTimeout(()=>setHv(null),600));
 ap()}
 function open_(k){S.hd=S.date;S.prov=k;S.date=pdates(k)[0]||S.date;render()}
 function pick(k){if(live())return open_(k);S.pend=k;$('#md').classList.remove('hide');$('#code').focus()}
